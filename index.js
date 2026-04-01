@@ -9,6 +9,7 @@ const triggers = require("./src/triggers/onDeviceUpdate");
 const gatekeeper = require("./src/gatekeeper/iotReceiver");
 const getConfig = require("./src/gatekeeper/getDeviceConfig");
 const scheduled = require("./src/scheduled/checkOfflineDevices");
+
 // Exportamos las funciones
 // 1. El Cerebro (Trigger de Firestore)
 exports.onDeviceUpdate = triggers.onDeviceUpdate;
