@@ -9,6 +9,8 @@ const triggers = require("./src/triggers/onDeviceUpdate");
 const gatekeeper = require("./src/gatekeeper/iotReceiver");
 const getConfig = require("./src/gatekeeper/getDeviceConfig");
 const scheduled = require("./src/scheduled/checkOfflineDevices");
+// Importamos el módulo de llamadas desde la app
+const callable = require("./src/callable/registerOrJoinDevice");
 
 // Exportamos las funciones
 // 1. El Cerebro (Trigger de Firestore)
@@ -18,8 +20,10 @@ exports.onDeviceUpdate = triggers.onDeviceUpdate;
 exports.iotReceiver = gatekeeper.iotReceiverFunction;
 exports.getDeviceConfig = getConfig.getDeviceConfig;
 
+// 3. Funciones Callable (Para la App Móvil)
+exports.registerOrJoinDevice = callable.registerOrJoinDevice;
+
 // ==========================================
 // TAREAS PROGRAMADAS (CRON JOBS)
 // ==========================================
-// Agrega esta nueva línea apuntando a la carpeta donde guardaste el archivo
 exports.checkOfflineDevices = scheduled.checkOfflineDevices;
