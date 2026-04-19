@@ -7,6 +7,7 @@ const ALARM_TYPES = Object.freeze({
     BAT_LOW: "ALARM_BAT_LOW",
     VOL_LOW: "ALARM_VOL_LOW",
     WIFI_LOW: "ALARM_WIFI_LOW",
+    WIFI_CUT: "ALARM_WIFI_CUT",
     INFO_ONLINE: "INFO_ONLINE"
 });
 

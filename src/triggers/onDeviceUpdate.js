@@ -70,7 +70,7 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
                 tempCam1High: false, tempCam1Low: false, doorCam1Open: false,
                 tempCam2High: false, tempCam2Low: false, doorCam2Open: false,
                 deviceOffline: false,
-                batLow: false, volLow: false, wifiLow: false
+                batLow: false, volLow: false, wifiLow: false, wifiCut: false
             };
 
             // Cámara 1
@@ -91,6 +91,7 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
             if (current.bat < minBat && config.batAlarmEnabled !== false) newAlarms.batLow = true;
             if (current.vol < minVol && config.volAlarmEnabled !== false) newAlarms.volLow = true;
             if (current.wifiRssi < minWifi && config.wifiAlarmEnabled === true) newAlarms.wifiLow = true;
+            if (current.wifiRssi === 0 && config.wifiAlarmEnabled === true) newAlarms.wifiCut = true;
 
             const currentAlarms = newData.activeAlarms || {};
             const alarmsChanged = JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms);
@@ -180,6 +181,10 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
                     if (newAlarms.wifiLow && !currentAlarms.wifiLow) {
                         notificationsToSend.push({ title: "📡 Señal Débil", body: `El WiFi de ${deviceName} está en nivel crítico.` });
                         logsToWrite.push({ type: ALARM_TYPES.WIFI_LOW, camera: 0, message: "Nivel de señal WiFi crítico" });
+                    }
+                    if (newAlarms.wifiCut && !currentAlarms.wifiCut) {
+                        notificationsToSend.push({ title: "📡 Corte de WiFi", body: `El equipo ${deviceName} perdió la conexión WiFi.` });
+                        logsToWrite.push({ type: ALARM_TYPES.WIFI_CUT, camera: 0, message: "Corte de conexión WiFi detectado" });
                     }
                     
                     // -- RECUPERACIÓN DE CONEXIÓN --
