@@ -74,7 +74,13 @@ exports.getDeviceConfig = onRequest(async (req, res) => {
             tempCam2Max: config.tempCam2Max || 0.0,
             reportInterval: config.reportInterval || 10,
             doorCam1AlarmEnabled: config.doorCam1AlarmEnabled ?? true,
-            doorCam2AlarmEnabled: config.doorCam2AlarmEnabled ?? true
+            doorCam2AlarmEnabled: config.doorCam2AlarmEnabled ?? true,
+            doorAlarmTime: config.doorAlarmTime || 60,
+            buzzerTime: config.buzzerTime || 30,
+            wifiAlarmTime: config.wifiAlarmTime || 300,
+            acAlarmTime: config.acAlarmTime || 60,
+            batAlarmTime: config.batAlarmTime || 300,
+            phoneNumber: config.phoneNumber || ""
         };
 
         // Devolvemos el JSON al módulo Simcom/ESP
