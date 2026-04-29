@@ -79,7 +79,6 @@ exports.getDeviceConfig = onRequest(async (req, res) => {
             buzzerTime: config.buzzerTime || 30,
             wifiAlarmTime: config.wifiAlarmTime || 300,
             acAlarmTime: config.acAlarmTime || 60,
-            batAlarmTime: config.batAlarmTime || 300,
             phoneNumber: config.phoneNumber || ""
         };
 

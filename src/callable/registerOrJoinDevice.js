@@ -74,7 +74,6 @@ exports.registerOrJoinDevice = onCall(async (request) => {
                     buzzerTime: 30,
                     wifiAlarmTime: 300,
                     acAlarmTime: 60,
-                    batAlarmTime: 300,
                     phoneNumber: ""
                 }
             };
