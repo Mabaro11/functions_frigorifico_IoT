@@ -1,3 +1,10 @@
+/**
+ * GATEKEEPER: iotReceiver
+ * Punto de entrada HTTP (POST) para que los dispositivos IoT (SIMCOM/ESP32) envíen su telemetría.
+ * Se encarga de la autenticación del usuario/dispositivo, validación de permisos de dueño,
+ * mapeo de sensores y actualización del estado 'currentReadings' en Firestore.
+ * También notifica al dispositivo si hay configuraciones pendientes.
+ */
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { defineString } = require("firebase-functions/params");
@@ -117,7 +124,7 @@ const iotReceiverFunction = onRequest(async (req, res) => {
         // Solo actualizamos el estado actual. 
         // El Trigger 'onDeviceUpdate' se encargará de guardar el historial y revisar alarmas.
         
-        await deviceRef.update({
+        const updateData = {
             lastSeen: serverTimestamp,
             lastReset: incomingData.lastReset || "",
             isOnline: true,
@@ -126,10 +133,19 @@ const iotReceiverFunction = onRequest(async (req, res) => {
                 // Usamos fecha JS para que la UI la muestre inmediatamente sin esperar sync
                 ts: new Date() 
             }
-        });
+        };
 
-        // Respuesta exitosa
-        res.status(200).send("OK");
+        // Si el dispositivo nos envía la flag para resetearla (ej. hasPendingConfig: false)
+        if (body.hasPendingConfig !== undefined) {
+            updateData.hasPendingConfig = body.hasPendingConfig;
+        }
+
+        await deviceRef.update(updateData);
+
+        // Respuesta exitosa: Devolvemos si hay una configuración pendiente para que el dispositivo lo sepa
+        res.status(200).json({
+            hasPendingConfig: deviceData.hasPendingConfig || false
+        });
 
     } catch (error) {
         console.error("Error crítico en Gatekeeper:", error);

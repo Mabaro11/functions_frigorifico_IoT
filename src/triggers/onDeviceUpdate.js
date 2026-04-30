@@ -1,3 +1,12 @@
+/**
+ * THE BRAIN: onDeviceUpdate
+ * Trigger de Firestore que se activa ante cualquier cambio en un documento de la colección 'devices'.
+ * Responsabilidades:
+ * 1. Archivar el historial de lecturas en la subcolección 'readings'.
+ * 2. Auditar cambios de configuración en 'configLogs'.
+ * 3. Motor de alarmas: Evalúa umbrales y gestiona el estado de 'activeAlarms'.
+ * 4. Notificaciones: Envía alertas push (FCM) a dueños y observadores.
+ */
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 const { ALARM_TYPES } = require("../utils/constants");

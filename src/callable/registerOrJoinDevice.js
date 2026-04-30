@@ -1,3 +1,10 @@
+/**
+ * APP INTERFACE: registerOrJoinDevice
+ * Función Callable invocada desde la aplicación móvil.
+ * Permite a un usuario registrar un equipo nuevo como 'Dueño' o unirse a uno existente como 'Invitado' (viewer)
+ * utilizando el ID del dispositivo y un PIN de seguridad.
+ * Inicializa la configuración por defecto si el equipo es nuevo.
+ */
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 

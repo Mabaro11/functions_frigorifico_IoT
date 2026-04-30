@@ -1,3 +1,9 @@
+/**
+ * GATEKEEPER: getDeviceConfig
+ * Endpoint HTTP (POST) que permite a los dispositivos IoT descargar su configuración desde Firestore.
+ * Valida las credenciales del dispositivo y devuelve un JSON con los parámetros operativos.
+ * Al ser consultado exitosamente, resetea la flag 'hasPendingConfig' a false.
+ */
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { defineString } = require("firebase-functions/params");
@@ -59,10 +65,15 @@ exports.getDeviceConfig = onRequest(async (req, res) => {
         }
 
         // ==========================================
-        // PASO 3: RESPONDER CON UN JSON MINÚSCULO
+        // PASO 3: RESPONDER Y RESETEAR FLAG
         // ==========================================
         const deviceData = doc.data();
-        
+
+        // Si la flag está en true, la ponemos en false ya que el dispositivo la está descargando ahora
+        if (deviceData.hasPendingConfig === true) {
+            await deviceRef.update({ hasPendingConfig: false });
+        }
+
         // Extraemos solo el nodo config (si no existe, usamos un objeto vacío para evitar errores)
         const config = deviceData.config || {};
 

@@ -1,3 +1,10 @@
+/**
+ * THE WATCHDOG: checkOfflineDevices
+ * Tarea programada (Cron Job) que se ejecuta cada 5 minutos.
+ * Escanea todos los dispositivos para detectar aquellos que no han reportado en más de 15 minutos.
+ * Si detecta un dispositivo desconectado, lo marca como offline, activa la alarma correspondiente
+ * y envía una notificación push de advertencia a los usuarios asociados.
+ */
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 
