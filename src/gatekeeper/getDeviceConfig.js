@@ -69,11 +69,6 @@ exports.getDeviceConfig = onRequest(async (req, res) => {
         // ==========================================
         const deviceData = doc.data();
 
-        // Si la flag está en true, la ponemos en false ya que el dispositivo la está descargando ahora
-        if (deviceData.hasPendingConfig === true) {
-            await deviceRef.update({ hasPendingConfig: false });
-        }
-
         // Extraemos solo el nodo config (si no existe, usamos un objeto vacío para evitar errores)
         const config = deviceData.config || {};
 
