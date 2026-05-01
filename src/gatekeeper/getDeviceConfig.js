@@ -7,6 +7,7 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { defineString } = require("firebase-functions/params");
+const { getSanitizedConfig } = require("../models/device");
 
 // Reutilizamos tu variable de entorno
 const apiKeyParams = defineString("WEB_API_KEY");
@@ -69,27 +70,11 @@ exports.getDeviceConfig = onRequest(async (req, res) => {
         // ==========================================
         const deviceData = doc.data();
 
-        // Extraemos solo el nodo config (si no existe, usamos un objeto vacío para evitar errores)
-        const config = deviceData.config || {};
-
-        // Armamos un JSON que coincide exactamente con los valores por defecto de tu IoTDevice.kt
-        const responseJson = {
-            tempCam1Min: config.tempCam1Min || 0.0,
-            tempCam1Max: config.tempCam1Max || 0.0,
-            tempCam2Min: config.tempCam2Min || 0.0,
-            tempCam2Max: config.tempCam2Max || 0.0,
-            reportInterval: config.reportInterval || 10,
-            doorCam1AlarmEnabled: config.doorCam1AlarmEnabled ?? true,
-            doorCam2AlarmEnabled: config.doorCam2AlarmEnabled ?? true,
-            doorAlarmTime: config.doorAlarmTime || 60,
-            buzzerTime: config.buzzerTime || 30,
-            wifiAlarmTime: config.wifiAlarmTime || 300,
-            acAlarmTime: config.acAlarmTime || 60,
-            phoneNumber: config.phoneNumber || ""
-        };
+        // Usamos el modelo para obtener la config sanitizada con valores por defecto
+        const config = getSanitizedConfig(deviceData.config);
 
         // Devolvemos el JSON al módulo Simcom/ESP
-        res.status(200).json(responseJson);
+        res.status(200).json(config);
 
     } catch (error) {
         console.error("Error crítico al obtener configuraciones:", error);

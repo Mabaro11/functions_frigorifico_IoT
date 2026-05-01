@@ -7,6 +7,7 @@
  */
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { createInitialDevice } = require("../models/device");
 
 exports.registerOrJoinDevice = onCall(async (request) => {
     // 1. Seguridad: Verificar que el usuario esté logueado
@@ -62,28 +63,8 @@ exports.registerOrJoinDevice = onCall(async (request) => {
             // ESCENARIO B: EL EQUIPO NO EXISTE (CREAR)
             // ==========================================
             
-            // Aquí armas el documento inicial exactamente como lo hacías en Kotlin
-            const newDevice = {
-                name: name,
-                owner: uid,
-                securityPin: pin,
-                viewers: [],
-                editors: [],
-                config: {
-                    tempCam1Min: 0.0,
-                    tempCam1Max: 0.0,
-                    tempCam2Min: 0.0,
-                    tempCam2Max: 0.0,
-                    reportInterval: 10,
-                    doorCam1AlarmEnabled: true,
-                    doorCam2AlarmEnabled: true,
-                    doorAlarmTime: 60,
-                    buzzerTime: 30,
-                    wifiAlarmTime: 300,
-                    acAlarmTime: 60,
-                    phoneNumber: ""
-                }
-            };
+            // Usamos el modelo para generar el documento completo con defaults
+            const newDevice = createInitialDevice(name, uid, pin);
 
             await deviceRef.set(newDevice);
 

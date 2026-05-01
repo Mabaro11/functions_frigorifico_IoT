@@ -1,83 +1,81 @@
-# GEMINI.md: Frigorifico_IoT Cloud Functions
+# GEMINI.md: Cloud Functions para Frigorifico_IoT
 
-This document provides a comprehensive overview of the Firebase Cloud Functions backend for the IoT Refrigerator Monitoring project.
+Este documento proporciona una visión general completa del backend de Firebase Cloud Functions para el proyecto de Monitoreo de Frigoríficos IoT.
 
-## Project Overview
+## Descripción General del Proyecto
 
-This is a serverless backend built on **Node.js** and **Google Cloud Functions for Firebase**. Its primary purpose is to receive, process, and monitor data from IoT devices installed in refrigerators, and to alert users of important events like temperature anomalies or device disconnections.
+Este es un backend serverless construido con **Node.js** y **Google Cloud Functions para Firebase**. Su propósito principal es recibir, procesar y monitorear los datos de los dispositivos IoT instalados en los frigoríficos, y alertar a los usuarios sobre eventos importantes como anomalías de temperatura o desconexiones de los dispositivos.
 
-### Core Architecture
+### Arquitectura Principal
 
-The system is composed of three main types of functions:
+El sistema está compuesto por tres tipos principales de funciones:
 
-1.  **Gatekeeper (HTTP-triggered):** The `iotReceiver` function is a public HTTP endpoint that serves as the single entry point for data coming from the IoT devices (likely SIMCOM modules). It is responsible for:
-    *   Authenticating the user/device via email and password.
-    *   Authorizing that the authenticated user owns the device.
-    *   Receiving sensor data (temperatures, door status, etc.).
-    *   Updating the device's latest state in the Firestore database.
+1.  **Gatekeeper (Activado por HTTP):** La función `iotReceiver` es un endpoint HTTP público que sirve como el único punto de entrada para los datos provenientes de los dispositivos IoT (módulos SIMCOM/ESP32). Es responsable de:
+    *   Autenticar al usuario/dispositivo mediante email y contraseña.
+    *   Autorizar que el usuario autenticado sea el dueño del dispositivo.
+    *   Recibir datos de sensores (temperaturas, estado de puertas, conectividad `lteOk`, etc.).
+    *   Actualizar el estado más reciente del dispositivo en la base de datos Firestore utilizando el modelo centralizado.
 
-2.  **The Brain (Firestore-triggered):** The `onDeviceUpdate` function is the core of the system's logic. It automatically runs whenever a device's document is updated in Firestore. Its responsibilities include:
-    *   **Archiving:** Saving the incoming sensor data to a historical `readings` subcollection.
-    *   **Alarm Engine:** Comparing the new sensor data against the device's configured thresholds (e.g., `tempCam1Max`, `doorCam1AlarmEnabled`).
-    *   **State Management:** Updating an `activeAlarms` map in the device's document to reflect the current alarm status.
-    *   **Notifications:** Sending **Firebase Cloud Messaging (FCM)** push notifications to the device's owner and registered viewers if a new alarm is triggered or an existing one is resolved.
-    *   **Logging:** Recording all alarm events and configuration changes into separate subcollections for auditing.
+2.  **El Cerebro (Activado por Firestore):** La función `onDeviceUpdate` es el núcleo de la lógica del sistema. Se ejecuta automáticamente cada vez que se actualiza el documento de un dispositivo en Firestore. Sus responsabilidades incluyen:
+    *   **Archivado:** Guardar los datos entrantes de los sensores en una subcolección histórica de `readings`.
+    *   **Motor de Alarmas:** Comparar los nuevos datos de los sensores con los umbrales configurados del dispositivo (ej. `tempCam1Max`, `doorCam1AlarmEnabled`) y monitorear el estado del hardware (ej. conectividad LTE).
+    *   **Gestión de Estados:** Actualizar un mapa de `activeAlarms` en el documento del dispositivo para reflejar el estado actual de las alarmas.
+    *   **Notificaciones:** Enviar notificaciones push a través de **Firebase Cloud Messaging (FCM)** al dueño, observadores (`viewers`) y editores si se activa una nueva alarma o se resuelve una existente.
+    *   **Registro (Logging):** Registrar todos los eventos de alarma y cambios de configuración en subcolecciones separadas para auditoría.
 
-3.  **The Watchdog (Scheduled):** The `checkOfflineDevices` function is a cron job that runs every 5 minutes. It scans all devices to ensure they are regularly sending data. If a device has not reported in over 15 minutes, this function:
-    *   Marks the device as `isOnline: false`.
-    *   Triggers a `deviceOffline` alarm.
-    *   Sends a push notification to alert users that the device has lost connection.
+3.  **El Watchdog (Programado):** La función `checkOfflineDevices` es una tarea programada (cron job) que se ejecuta cada 5 minutos. Escanea todos los dispositivos para asegurar que están enviando datos regularmente. Si un dispositivo no ha reportado en más de 15 minutos:
+    *   Marca el dispositivo como `isOnline: false`.
+    *   Activa una alarma de `deviceOffline`.
+    *   Envía una notificación push para alertar a los usuarios (Dueño, Viewers y Editores) que el dispositivo ha perdido la conexión.
 
-### Firestore Data Model
+### Modelo de Datos de Firestore
 
-*   `/devices/{macAddress}`: The main collection. Each document represents one IoT device. It stores the device name, its owner/viewers, its configuration (`config`), its current state (`currentReadings`), and its alarm status (`activeAlarms`).
-*   `/devices/{macAddress}/readings`: A subcollection containing a time-series log of all historical sensor data.
-*   `/devices/{macAddress}/alarmLogs`: A subcollection that audits every alarm event (e.g., "High Temperature Detected").
-*   `/devices/{macAddress}/configLogs`: A subcollection that audits any changes made to a device's settings.
-*   `/users/{userId}`: Stores user profiles, and most importantly, the `fcmTokens` array required to send them push notifications.
+*   `/devices/{macAddress}`: La colección principal. Cada documento representa un dispositivo IoT. Almacena el nombre del dispositivo, su dueño/observadores/editores, su configuración (`config`), su estado actual (`currentReadings`) y su estado de alarmas (`activeAlarms`).
+*   `/devices/{macAddress}/readings`: Una subcolección que contiene un registro histórico de todos los datos de los sensores.
+*   `/devices/{macAddress}/alarmLogs`: Una subcolección que audita cada evento de alarma.
+*   `/devices/{macAddress}/configLogs`: Una subcolección que audita cualquier cambio realizado en los ajustes del dispositivo.
+*   `/users/{userId}`: Almacena perfiles de usuario y los tokens `fcmTokens` necesarios para enviar notificaciones push.
 
-## Building and Running
+## Compilación y Ejecución
 
-### Prerequisites
+### Prerrequisitos
 
-*   Node.js (v20 as specified in `package.json`)
+*   Node.js (v24 según `package.json`)
 *   Firebase CLI (`npm install -g firebase-tools`)
-*   Authentication with the Firebase CLI (`firebase login`)
-*   Project setup (`firebase use <your-project-id>`)
+*   Autenticación con Firebase CLI (`firebase login`)
+*   Configuración del proyecto (`firebase use <tu-id-de-proyecto>`)
 
-### Key Commands
+### Comandos Clave
 
-The following commands can be run from the `functions` directory.
+Los siguientes comandos pueden ejecutarse desde el directorio `functions`.
 
-*   **Install Dependencies:**
+*   **Instalar Dependencias:**
     ```bash
     npm install
     ```
 
-*   **Run Locally with Emulators:** To test functions locally without deploying.
+*   **Ejecutar Localmente con Emuladores:** Para probar las funciones localmente sin desplegar.
     ```bash
     npm run serve
-    # Equivalent to: firebase emulators:start --only functions
     ```
 
-*   **Deploy to Firebase:**
+*   **Desplegar en Firebase:**
     ```bash
     npm run deploy
-    # Equivalent to: firebase deploy --only functions
     ```
 
-*   **View Logs:** To see real-time logs from the deployed functions.
+*   **Ver Logs:** Para ver los logs en tiempo real de las funciones desplegadas.
     ```bash
     npm run logs
-    # Equivalent to: firebase functions:log
     ```
 
-## Development Conventions
+## Convenciones de Desarrollo
 
-*   **Modular Structure:** Logic is separated by trigger type into `src/gatekeeper`, `src/triggers`, and `src/scheduled`.
-*   **Central Entry Point:** `index.js` initializes Firebase and exports all functions from their respective modules.
-*   **Constants:** Shared, static values like alarm type strings are stored in `src/utils/constants.js`.
-*   **Environment Variables:** The functions expect a `WEB_API_KEY` environment variable, used for authenticating users. This should be set in the Firebase environment configuration:
+*   **Estructura Modular:** La lógica está separada por tipo de activador en `src/gatekeeper`, `src/triggers` y `src/scheduled`.
+*   **Modelo Único de Verdad:** Se utiliza `src/models/device.js` para centralizar los valores por defecto y el mapeo de datos de los dispositivos.
+*   **Punto de Entrada Central:** `index.js` inicializa Firebase y exporta todas las funciones desde sus respectivos módulos.
+*   **Constantes:** Los valores estáticos compartidos, como los tipos de alarma, se almacenan en `src/utils/constants.js`.
+*   **Variables de Entorno:** Las funciones esperan una variable de entorno `WEB_API_KEY`, utilizada para autenticar usuarios. Debe configurarse en Firebase:
     ```bash
     firebase functions:secrets:set WEB_API_KEY
     ```

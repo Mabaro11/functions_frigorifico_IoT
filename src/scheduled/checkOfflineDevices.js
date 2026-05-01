@@ -62,6 +62,9 @@ exports.checkOfflineDevices = onSchedule("every 5 minutes", async (event) => {
                 if (data.viewers && Array.isArray(data.viewers)) {
                     uidsToNotify.push(...data.viewers);
                 }
+                if (data.editors && Array.isArray(data.editors)) {
+                    uidsToNotify.push(...data.editors);
+                }
 
                 // Limpiamos la lista para asegurarnos de que no haya undefined, null o vacíos
                 const validUids = uidsToNotify.filter(uid => typeof uid === 'string' && uid.trim() !== '');

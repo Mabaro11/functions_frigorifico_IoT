@@ -8,6 +8,7 @@ const ALARM_TYPES = Object.freeze({
     VOL_LOW: "ALARM_VOL_LOW",
     WIFI_LOW: "ALARM_WIFI_LOW",
     WIFI_CUT: "ALARM_WIFI_CUT",
+    LTE_FAIL: "ALARM_LTE_FAIL",
     INFO_ONLINE: "INFO_ONLINE"
 });
 

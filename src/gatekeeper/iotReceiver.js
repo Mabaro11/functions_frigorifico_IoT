@@ -8,6 +8,7 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { defineString } = require("firebase-functions/params");
+const { mapIncomingReadings } = require("../models/device");
 
 // Definimos la variable de entorno para la API Key
 const apiKeyParams = defineString("WEB_API_KEY");
@@ -96,26 +97,8 @@ const iotReceiverFunction = onRequest(async (req, res) => {
         const incomingData = body.data;
         const serverTimestamp = admin.firestore.FieldValue.serverTimestamp();
 
-        // Mapeo exacto según tu clase Kotlin 'DeviceReadings'
-        const sensorReadings = {
-            // Cámaras
-            tempCam1: incomingData.tempCam1 || 0.0,
-            doorCam1Open: incomingData.doorCam1Open || false,
-            
-            tempCam2: incomingData.tempCam2 || 0.0,
-            doorCam2Open: incomingData.doorCam2Open || false,
-            
-            // Ambiente
-            tempAmb: incomingData.tempAmb || 0.0,
-            humAmb: incomingData.humAmb || 0.0,
-
-            // Telemetría
-            bat: incomingData.bat || 0.0,
-            vol: incomingData.vol || 0.0,
-            wifiRssi: incomingData.wifiRssi || 0, // 0 si es GSM/SIMCOM
-
-            ts: serverTimestamp
-        };
+        // Mapeo centralizado en el modelo Device
+        const sensorReadings = mapIncomingReadings(incomingData, serverTimestamp);
 
         // ==========================================
         // PASO 5: ACTUALIZAR FIRESTORE
@@ -136,8 +119,8 @@ const iotReceiverFunction = onRequest(async (req, res) => {
         };
 
         // Si el dispositivo nos envía la flag para resetearla (ej. hasPendingConfig: false)
-        if (body.hasPendingConfig !== undefined) {
-            updateData.hasPendingConfig = body.hasPendingConfig;
+        if (incomingData.hasPendingConfig !== undefined) {
+            updateData.hasPendingConfig = incomingData.hasPendingConfig;
         }
 
         await deviceRef.update(updateData);

@@ -10,6 +10,7 @@
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 const { ALARM_TYPES } = require("../utils/constants");
+const { DEFAULT_ALARMS, getSanitizedConfig } = require("../models/device");
 
 exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) => {
     const newData = event.data.after.data();
@@ -17,15 +18,15 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
     const deviceId = event.params.deviceId;
 
     const current = newData.currentReadings;
-    const config = newData.config;
+    const config = getSanitizedConfig(newData.config);
 
-    if (!current || !config) return;
+    if (!current) return;
 
     // ==========================================
     // 1. DETECTAR QUÉ CAMBIÓ EXACTAMENTE
     // ==========================================
     const readingsChanged = JSON.stringify(current) !== JSON.stringify(oldData.currentReadings);
-    const configChanged = JSON.stringify(config) !== JSON.stringify(oldData.config);
+    const configChanged = JSON.stringify(newData.config) !== JSON.stringify(oldData.config);
 
     // Si no cambió ni la telemetría ni la configuración (ej. solo cambiaron el nombre), abortamos
     if (!readingsChanged && !configChanged) {
@@ -75,12 +76,7 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
             batch.set(historyRef, current);
 
             // TAREA B: VERIFICAR ALARMAS
-            let newAlarms = {
-                tempCam1High: false, tempCam1Low: false, doorCam1Open: false,
-                tempCam2High: false, tempCam2Low: false, doorCam2Open: false,
-                deviceOffline: false,
-                batLow: false, volLow: false, wifiLow: false, wifiCut: false
-            };
+            let newAlarms = { ...DEFAULT_ALARMS };
 
             // Cámara 1
             if (current.tempCam1 > config.tempCam1Max) newAlarms.tempCam1High = true;
@@ -101,6 +97,7 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
             if (current.vol < minVol && config.volAlarmEnabled !== false) newAlarms.volLow = true;
             if (current.wifiRssi < minWifi && config.wifiAlarmEnabled === true) newAlarms.wifiLow = true;
             if (current.wifiRssi === 0 && config.wifiAlarmEnabled === true) newAlarms.wifiCut = true;
+            if (current.lteOk === false) newAlarms.lteFail = true;
 
             const currentAlarms = newData.activeAlarms || {};
             const alarmsChanged = JSON.stringify(newAlarms) !== JSON.stringify(currentAlarms);
@@ -115,6 +112,7 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
                 const uidsToNotify = [];
                 if (newData.owner) uidsToNotify.push(newData.owner);
                 if (newData.viewers && Array.isArray(newData.viewers)) uidsToNotify.push(...newData.viewers);
+                if (newData.editors && Array.isArray(newData.editors)) uidsToNotify.push(...newData.editors);
 
                 const validUids = uidsToNotify.filter(uid => typeof uid === 'string' && uid.trim() !== '');
 
@@ -194,6 +192,10 @@ exports.onDeviceUpdate = onDocumentUpdated("devices/{deviceId}", async (event) =
                     if (newAlarms.wifiCut && !currentAlarms.wifiCut) {
                         notificationsToSend.push({ title: "📡 Corte de WiFi", body: `El equipo ${deviceName} perdió la conexión WiFi.` });
                         logsToWrite.push({ type: ALARM_TYPES.WIFI_CUT, camera: 0, message: "Corte de conexión WiFi detectado" });
+                    }
+                    if (newAlarms.lteFail && !currentAlarms.lteFail) {
+                        notificationsToSend.push({ title: "📵 Fallo de LTE", body: `El equipo ${deviceName} reporta un fallo en la conexión LTE.` });
+                        logsToWrite.push({ type: ALARM_TYPES.LTE_FAIL, camera: 0, message: "Fallo de conexión LTE detectado" });
                     }
                     
                     // -- RECUPERACIÓN DE CONEXIÓN --
